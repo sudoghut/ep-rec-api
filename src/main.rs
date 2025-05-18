@@ -158,7 +158,7 @@ async fn main() -> std::io::Result<()> {
             .route("/get_content_by_series_id", web::post().to(get_content_by_series_id))
             .route("/get_content_by_series_id", web::get().to(get_content_by_series_id))
     })
-    .bind(("127.0.0.1", 3000))?
+    .bind(("127.0.0.1", 3001))?
     .run()
     .await
 }
