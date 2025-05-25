@@ -124,20 +124,64 @@ async fn get_content_by_series_id(
 }
 
 async fn git_pull_task() {
+    println!("[git_pull_task] Starting background task");
     loop {
+        println!("[git_pull_task] Checking repository at {}", REPO_DIR);
         // Clone if not exists
         if !Path::new(REPO_DIR).exists() {
-            let _ = Repository::clone(REPO_URL, REPO_DIR);
+            println!("[git_pull_task] Repository doesn't exist, cloning from {}", REPO_URL);
+            match Repository::clone(REPO_URL, REPO_DIR) {
+                Ok(_) => println!("[git_pull_task] Successfully cloned repository"),
+                Err(e) => println!("[git_pull_task] Failed to clone repository: {}", e),
+            }
         } else {
-            if let Ok(repo) = Repository::open(REPO_DIR) {
-                let mut remote = repo.find_remote("origin").unwrap();
-                let _ = remote.fetch(&["main"], None, None);
-                let refspec = repo.find_reference("refs/remotes/origin/main").unwrap();
-                let oid = refspec.target().unwrap();
-                let mut branch = repo.find_reference("refs/heads/main").unwrap();
-                branch.set_target(oid, "Fast-forward").unwrap();
+            println!("[git_pull_task] Repository exists, attempting to pull updates");
+            match Repository::open(REPO_DIR) {
+                Ok(repo) => {
+                    println!("[git_pull_task] Successfully opened repository");
+                    match repo.find_remote("origin") {
+                        Ok(mut remote) => {
+                            println!("[git_pull_task] Found remote 'origin', fetching updates");
+                            match remote.fetch(&["main"], None, None) {
+                                Ok(_) => println!("[git_pull_task] Successfully fetched updates"),
+                                Err(e) => println!("[git_pull_task] Failed to fetch updates: {}", e),
+                            }
+                            
+                            match repo.find_reference("refs/remotes/origin/main") {
+                                Ok(refspec) => {
+                                    match refspec.target() {
+                                        Some(oid) => {
+                                            match repo.find_reference("refs/heads/main") {
+                                                Ok(mut branch) => {
+                                                    match branch.set_target(oid, "Fast-forward") {
+                                                        Ok(_) => {
+                                                            println!("[git_pull_task] Successfully fast-forwarded main branch");
+                                                            // Reset working directory to match the updated branch
+                                                            let obj = repo.find_object(oid, None).unwrap();
+                                                            match repo.reset(&obj, git2::ResetType::Hard, None) {
+                                                                Ok(_) => println!("[git_pull_task] Successfully updated working directory"),
+                                                                Err(e) => println!("[git_pull_task] Failed to update working directory: {}", e),
+                                                            }
+                                                        },
+                                                        Err(e) => println!("[git_pull_task] Failed to fast-forward main branch: {}", e),
+                                                    }
+                                                }
+                                                Err(e) => println!("[git_pull_task] Failed to find local main branch: {}", e),
+                                            }
+                                        }
+                                        None => println!("[git_pull_task] No target found for origin/main"),
+                                    }
+                                }
+                                Err(e) => println!("[git_pull_task] Failed to find remote main branch: {}", e),
+                            }
+                        }
+                        Err(e) => println!("[git_pull_task] Failed to find remote 'origin': {}", e),
+                    }
+                }
+                Err(e) => println!("[git_pull_task] Failed to open repository: {}", e),
             }
         }
+        println!("[git_pull_task] Sleeping for {} seconds", GIT_PULL_INTERVAL_SECS);
         tokio::time::sleep(Duration::from_secs(GIT_PULL_INTERVAL_SECS)).await;
     }
 }
