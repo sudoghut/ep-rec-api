@@ -9,6 +9,7 @@ You can build a release binary within a Fedora Docker container:
 3.  **Copy Binary:** `docker cp ep-rec-api-container:/app/target/release/ep-rec-api .`
 4.  **Cleanup (Optional):** `docker rm ep-rec-api-container`
 5.  **Remove Image (Optional):** `docker rmi ep-rec-api`
+6.  **Remove Build Cache (Optional):** `docker builder prune`
 
 Now you have the `ep-rec-api` binary built in your host server, ready to run on a compatible system.
 
