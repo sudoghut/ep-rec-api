@@ -14,7 +14,7 @@ use git2::Repository;
 const REPO_URL: &str = "https://github.com/sudoghut/eplot-data-compiler.git";
 const REPO_DIR: &str = "./eplot-data-compiler";
 const DB_PATH: &str = "./eplot-data-compiler/data.db";
-const GIT_PULL_INTERVAL_SECS: u64 = 60 * 60 * 24; // 24 hours
+const GIT_PULL_INTERVAL_SECS: u64 = 60 * 30; // 30 minutes
 
 #[derive(Serialize)]
 struct SeriesItem {
